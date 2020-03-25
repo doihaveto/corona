@@ -22,7 +22,7 @@ h1 {
 .params > div {
     font-size: 2em;
     display: inline-block;
-    padding: 30px;
+    padding: 0 30px 25px 30px;
     text-align: center;
 }
 .params.extra > div {
