@@ -46,7 +46,7 @@
             <div><input type="number" id="death-percent" value="1.5"></div>
         </div>
         <div>
-            <div>מוות אחרי מספר ימים</div>
+            <div>מוות \ החלמה אחרי מספר ימים</div>
             <div><input type="number" id="death-days" value="15"></div>
         </div>
     </div>
@@ -57,7 +57,7 @@
 </div>
 <div id="results-template">
     <div class="day-result">
-        <div><span class="infected"></span> מקרים אחרי <span class="days"></span> ימים</div><div class="ventilation hide">. <span class="ventilated"></span> מונשמים.</div> <div class="death hide"><span class="dead"></span> מתים.</div>
+        <div><span class="infected"></span> מקרים אחרי <span class="days"></span> ימים</div><div class="ventilation hide">. <span class="ventilated"></span> מונשמים.</div> <div class="death hide"><span class="dead"></span> הרוגים.</div>
     </div>
 </div>
 <script type="text/javascript">
@@ -92,7 +92,7 @@ function calculate_corona() {
         let ncases = multiply_days(cases, multiplies_by, every_days, day);
         if (!ncases || ncases > limit_cases)
             break;
-        var ventilated = multiply_days(ncases, multiplies_by, every_days, -ventilation_days);
+        var ventilated = multiply_days(ncases, multiplies_by, every_days, -ventilation_days) - multiply_days(ncases, multiplies_by, every_days, -death_days);
         if (ventilated)
             ventilated = Math.floor(ventilated * (ventilation_percent / 100));
         else
