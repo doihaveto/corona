@@ -92,7 +92,7 @@ function calculate_corona() {
         let ncases = multiply_days(cases, multiplies_by, every_days, day);
         if (!ncases || ncases > limit_cases)
             break;
-        var ventilated = multiply_days(ncases, multiplies_by, every_days, -ventilation_days) - multiply_days(ncases, multiplies_by, every_days, -death_days);
+        var ventilated = multiply_days(ncases, multiplies_by, every_days, -ventilation_days) - multiply_days(ncases, multiplies_by, every_days, -death_days - ventilation_days);
         if (ventilated)
             ventilated = Math.floor(ventilated * (ventilation_percent / 100));
         else
