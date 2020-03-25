@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
+    <link href="style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Arimo&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" type="text/javascript"></script>
+    <title>מחשבון קורונה</title>
+</head>
+<body>
+<div id="header" class="centered">
+    <h1>מחשבון קורונה</h1>
+    <div id="params">
+        <div>
+            <div>מספר מקרים התחלתי</div>
+            <div><input type="number" id="cases"></div>
+        </div>
+        <div>
+            <div>מוכפל פי</div>
+            <div><input type="number" id="multiplies-by" value="2"></div>
+        </div>
+        <div>
+            <div>כל מספר ימים</div>
+            <div><input type="number" id="every-days" value="3"></div>
+        </div>
+    </div>
+</div>
+<div id="results" class="centered"></div>
+<div class="centered">
+    <button type="button" id="toggle-full-results" data-off-text="תוצאות מורחבות" data-on-text="תוצאות מצומצמות"></button>
+</div>
+<div id="results-template">
+    <div class="day-result"><span class="infected"></span> חולים אחרי <span class="days"></span> יום</div>
+</div>
+<script type="text/javascript">
+var calculate_days = 45;
+var limit_cases = 15000000000;
+var important_days = [3, 7, 14, 30];
+var full_results = false;
+
+function multiply_days(cases, multiplies_by, every_days, day) {
+    return Math.floor(cases * Math.pow(multiplies_by, day / every_days));
+}
+
+function clear_results() {
+    document.querySelector('#results').innerHTML = '';
+}
+
+function calculate_corona() {
+    var cases = parseInt(document.querySelector('#cases').value);
+    var multiplies_by = parseInt(document.querySelector('#multiplies-by').value);
+    var every_days = parseInt(document.querySelector('#every-days').value);
+    clear_results();
+    if (isNaN(cases) || isNaN(multiplies_by) || isNaN(every_days))
+        return;
+    var results_el = document.querySelector('#results');
+    for (let day = 1; day <= calculate_days; day++) {
+        let ncases = multiply_days(cases, multiplies_by, every_days, day);
+        if (!ncases || ncases > limit_cases)
+            break;
+        let el = document.querySelector('#results-template .day-result').cloneNode(true);
+        el.querySelector('.infected').innerText = ncases.toLocaleString();
+        el.querySelector('.days').innerText = day;
+        if (important_days.indexOf(day) == -1) {
+            el.classList.add('hide', 'non-important');
+        } else {
+            el.classList.add('important');
+        }
+        results_el.appendChild(el);
+    }
+}
+
+function toggle_full_results() {
+    var button = document.querySelector('#toggle-full-results');
+    var qs = document.querySelectorAll('#results .non-important');
+    if (full_results) {
+        qs.forEach(el => el.classList.add('hide'));
+        button.innerText = button.attributes['data-off-text'].value;
+    } else {
+        qs.forEach(el => el.classList.remove('hide'));
+        button.innerText = button.attributes['data-on-text'].value;
+    }
+    full_results = !full_results;
+}
+
+document.querySelectorAll('#params input').forEach(el => {
+    el.addEventListener('change', calculate_corona);
+    el.addEventListener('keyup', calculate_corona);
+});
+var full_results_button = document.querySelector('#toggle-full-results')
+full_results_button.addEventListener('click', toggle_full_results);
+full_results_button.innerText = full_results_button.attributes['data-off-text'].value;
+</script>
+</body>
+</html>
