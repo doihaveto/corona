@@ -11,7 +11,7 @@
 <body>
 <div id="header" class="centered">
     <h1>מחשבון קורונה</h1>
-    <div id="params">
+    <div class="params">
         <div>
             <div>מספר מקרים התחלתי</div>
             <div><input type="number" id="cases"></div>
@@ -25,16 +25,36 @@
             <div><input type="number" id="every-days" value="3"></div>
         </div>
     </div>
+    <div class="params extra">
+        <div>
+            <div>אחוז המקרים הזקוקים להנשמה מלאכותית</div>
+            <div><input type="number" id="ventilation-percent" value="5"></div>
+        </div>
+        <div>
+            <div>הנשמה מלאכותית אחרי מספר ימים</div>
+            <div><input type="number" id="ventilation-days" value="8"></div>
+        </div>
+        <div>
+            <div>אחוז התמותה</div>
+            <div><input type="number" id="death-percent" value="1.5"></div>
+        </div>
+        <div>
+            <div>מוות אחרי מספר ימים</div>
+            <div><input type="number" id="death-days" value="15"></div>
+        </div>
+    </div>
 </div>
 <div id="results" class="centered"></div>
 <div class="centered">
     <button type="button" id="toggle-full-results" data-off-text="תוצאות מורחבות" data-on-text="תוצאות מצומצמות"></button>
 </div>
 <div id="results-template">
-    <div class="day-result"><span class="infected"></span> חולים אחרי <span class="days"></span> יום</div>
+    <div class="day-result">
+        <div><span class="infected"></span> מקרים אחרי <span class="days"></span> ימים</div><div class="ventilation hide">. <span class="ventilated"></span> מונשמים.</div> <div class="death hide"><span class="dead"></span> מתים.</div>
+    </div>
 </div>
 <script type="text/javascript">
-var calculate_days = 45;
+var calculate_days = 55;
 var limit_cases = 15000000000;
 var important_days = [3, 7, 14, 30];
 var full_results = false;
@@ -45,12 +65,18 @@ function multiply_days(cases, multiplies_by, every_days, day) {
 
 function clear_results() {
     document.querySelector('#results').innerHTML = '';
+    full_results = true;
+    toggle_full_results();
 }
 
 function calculate_corona() {
     var cases = parseInt(document.querySelector('#cases').value);
-    var multiplies_by = parseInt(document.querySelector('#multiplies-by').value);
-    var every_days = parseInt(document.querySelector('#every-days').value);
+    var multiplies_by = parseFloat(document.querySelector('#multiplies-by').value);
+    var every_days = parseFloat(document.querySelector('#every-days').value);
+    var ventilation_percent = parseFloat(document.querySelector('#ventilation-percent').value);
+    var ventilation_days = parseFloat(document.querySelector('#ventilation-days').value);
+    var death_percent = parseFloat(document.querySelector('#death-percent').value);
+    var death_days = parseFloat(document.querySelector('#death-days').value);
     clear_results();
     if (isNaN(cases) || isNaN(multiplies_by) || isNaN(every_days))
         return;
@@ -59,9 +85,27 @@ function calculate_corona() {
         let ncases = multiply_days(cases, multiplies_by, every_days, day);
         if (!ncases || ncases > limit_cases)
             break;
+        var ventilated = multiply_days(ncases, multiplies_by, every_days, -ventilation_days);
+        if (ventilated)
+            ventilated = Math.floor(ventilated * (ventilation_percent / 100));
+        else
+            ventilated = 0;
+        var dead = multiply_days(ncases, multiplies_by, every_days, -death_days);
+        if (dead)
+            dead = Math.floor(dead * (death_percent / 100));
+        else
+            dead = 0;
         let el = document.querySelector('#results-template .day-result').cloneNode(true);
-        el.querySelector('.infected').innerText = ncases.toLocaleString();
         el.querySelector('.days').innerText = day;
+        el.querySelector('.infected').innerText = ncases.toLocaleString();
+        if (ventilated) {
+            el.querySelector('.ventilated').innerText = ventilated.toLocaleString();
+            el.querySelector('.ventilation').classList.remove('hide');
+        }
+        if (dead) {
+            el.querySelector('.dead').innerText = dead.toLocaleString();
+            el.querySelector('.death').classList.remove('hide');
+        }
         if (important_days.indexOf(day) == -1) {
             el.classList.add('hide', 'non-important');
         } else {
@@ -84,7 +128,7 @@ function toggle_full_results() {
     full_results = !full_results;
 }
 
-document.querySelectorAll('#params input').forEach(el => {
+document.querySelectorAll('.params input').forEach(el => {
     el.addEventListener('change', calculate_corona);
     el.addEventListener('keyup', calculate_corona);
 });
