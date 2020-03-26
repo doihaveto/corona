@@ -71,3 +71,20 @@ button {
     margin-top: 20px;
     margin-right: 20px;
 }
+#credits a {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    direction: ltr;
+    text-decoration: none;
+    color: #2f6f63;
+    font-size: 0.85em;
+}
+#en-version {
+    position: absolute;
+    bottom: 0;
+    right: 12px;
+    direction: ltr;
+    color: #2f6f63;
+    font-size: 1.5em;
+}
