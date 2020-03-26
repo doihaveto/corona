@@ -55,6 +55,10 @@
 <div class="centered">
     <button type="button" id="toggle-full-results" data-off-text="תוצאות מורחבות" data-on-text="תוצאות מצומצמות"></button>
 </div>
+<div id="notes" class="hide">
+    <div>* החישוב הוא חישוב גס שלא לוקח בחשבון ירידה במספר הנדבקים או מאפייני אוכלוסייה.</div>
+    <div>* מספר המונשמים המוצג כולל מונשמים פעילים בלבד. כל שאר הנתונים הם נתונים מצטברים לכלל התקופה.</div>
+</div>
 <div id="results-template">
     <div class="day-result">
         <div><span class="infected"></span> מקרים אחרי <span class="days"></span> ימים</div><div class="ventilation hide">. <span class="ventilated"></span> מונשמים.</div> <div class="death hide"><span class="dead"></span> הרוגים.</div>
@@ -66,7 +70,7 @@ var limit_cases = 15000000000;
 var important_days = [3, 7, 14, 30];
 var full_results = false;
 
-function multiply_days(cases, multiplies_by, every_days, day) {
+function calc_cases(cases, multiplies_by, every_days, day) {
     return Math.floor(cases * Math.pow(multiplies_by, day / every_days));
 }
 
@@ -84,24 +88,25 @@ function calculate_corona() {
     var ventilation_days = parseFloat(document.querySelector('#ventilation-days').value);
     var death_percent = parseFloat(document.querySelector('#death-percent').value);
     var death_days = parseFloat(document.querySelector('#death-days').value);
+    var ventilated_for_days = death_days - ventilation_days;
     clear_results();
     if (isNaN(cases) || isNaN(multiplies_by) || isNaN(every_days))
         return;
     var results_el = document.querySelector('#results');
     for (let day = 1; day <= calculate_days; day++) {
-        let ncases = multiply_days(cases, multiplies_by, every_days, day);
+        let ncases = calc_cases(cases, multiplies_by, every_days, day);
         if (!ncases || ncases > limit_cases)
             break;
-        var ventilated = multiply_days(ncases, multiplies_by, every_days, -ventilation_days) - multiply_days(ncases, multiplies_by, every_days, -death_days);
-        if (ventilated)
-            ventilated = Math.floor(ventilated * (ventilation_percent / 100));
-        else
-            ventilated = 0;
-        var dead = multiply_days(ncases, multiplies_by, every_days, -death_days);
+        var dead = calc_cases(ncases, multiplies_by, every_days, -death_days);
         if (dead)
             dead = Math.floor(dead * (death_percent / 100));
         else
             dead = 0;
+        var ventilated = 0;
+        for (let vday = ventilation_days; vday <= ventilation_days + ventilated_for_days; vday++) {
+            var newly_admitted = calc_cases(ncases, multiplies_by, every_days, -vday) - calc_cases(ncases, multiplies_by, every_days, -vday - 1);
+            ventilated += Math.floor(newly_admitted * (ventilation_percent / 100));
+        }
         let el = document.querySelector('#results-template .day-result').cloneNode(true);
         el.querySelector('.days').innerText = day;
         el.querySelector('.infected').innerText = ncases.toLocaleString();
@@ -120,6 +125,7 @@ function calculate_corona() {
         }
         results_el.appendChild(el);
     }
+    document.querySelector('#notes').classList.remove('hide');
 }
 
 function toggle_full_results() {
