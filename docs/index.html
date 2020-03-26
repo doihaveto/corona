@@ -49,6 +49,10 @@
             <div>מוות \ החלמה אחרי מספר ימים</div>
             <div><input type="number" id="death-days" value="15"></div>
         </div>
+        <div>
+            <div>מספר מקרים סופי</div>
+            <div><input type="number" id="max-cases" value="6395200"></div>
+        </div>
     </div>
 </div>
 <div id="results" class="centered"></div>
@@ -61,17 +65,23 @@
 </div>
 <div id="results-template">
     <div class="day-result">
-        <div><span class="infected"></span> מקרים אחרי <span class="days"></span> ימים</div><div class="ventilation hide">. <span class="ventilated"></span> מונשמים.</div> <div class="death hide"><span class="dead"></span> הרוגים.</div>
+        <div>
+            <span class="infected"></span> מקרים אחרי <span class="days"></span> ימים.</div>
+            <div class="ventilation hide"><span class="ventilated"></span> מונשמים.</div>
+            <div class="death hide"><span class="dead"></span> הרוגים.</div>
     </div>
 </div>
 <script type="text/javascript">
-var calculate_days = 55;
+var calculate_days = 100;
 var limit_cases = 15000000000;
 var important_days = [3, 7, 14, 30];
 var full_results = false;
 
-function calc_cases(cases, multiplies_by, every_days, day) {
-    return Math.floor(cases * Math.pow(multiplies_by, day / every_days));
+function calc_cases(cases, multiplies_by, every_days, max_cases, day) {
+    var cases = Math.floor(cases * Math.pow(multiplies_by, day / every_days));
+    if (cases > max_cases)
+        return max_cases;
+    return cases;
 }
 
 function clear_results() {
@@ -88,23 +98,25 @@ function calculate_corona() {
     var ventilation_days = parseFloat(document.querySelector('#ventilation-days').value);
     var death_percent = parseFloat(document.querySelector('#death-percent').value);
     var death_days = parseFloat(document.querySelector('#death-days').value);
+    var max_cases = parseFloat(document.querySelector('#max-cases').value);
     var ventilated_for_days = death_days - ventilation_days;
     clear_results();
     if (isNaN(cases) || isNaN(multiplies_by) || isNaN(every_days))
         return;
     var results_el = document.querySelector('#results');
+    var prev_ventilated = 1;
     for (let day = 1; day <= calculate_days; day++) {
-        let ncases = calc_cases(cases, multiplies_by, every_days, day);
+        let ncases = calc_cases(cases, multiplies_by, every_days, max_cases, day);
         if (!ncases || ncases > limit_cases)
             break;
-        var dead = calc_cases(ncases, multiplies_by, every_days, -death_days);
+        var dead = calc_cases(cases, multiplies_by, every_days, max_cases, day - death_days);
         if (dead)
             dead = Math.floor(dead * (death_percent / 100));
         else
             dead = 0;
         var ventilated = 0;
         for (let vday = ventilation_days; vday <= ventilation_days + ventilated_for_days; vday++) {
-            var newly_admitted = calc_cases(ncases, multiplies_by, every_days, -vday) - calc_cases(ncases, multiplies_by, every_days, -vday - 1);
+            var newly_admitted = calc_cases(cases, multiplies_by, every_days, max_cases, day - vday) - calc_cases(cases, multiplies_by, every_days, max_cases, day - vday - 1);
             ventilated += Math.floor(newly_admitted * (ventilation_percent / 100));
         }
         let el = document.querySelector('#results-template .day-result').cloneNode(true);
@@ -124,6 +136,9 @@ function calculate_corona() {
             el.classList.add('important');
         }
         results_el.appendChild(el);
+        if (!ventilated && prev_ventilated && ncases == max_cases)
+            break;
+        prev_ventilated = ventilated;
     }
     document.querySelector('#notes').classList.remove('hide');
 }
