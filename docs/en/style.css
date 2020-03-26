@@ -70,12 +70,17 @@ button {
     margin-top: 20px;
     margin-right: 20px;
 }
+a:link, a:visited, a:hover, a:active {
+    color: #2f6f63;
+}
 #credits a {
-    position: absolute;
-    bottom: 0;
-    left: 0;
+    float: right;
     direction: ltr;
     text-decoration: none;
-    color: #2f6f63;
     font-size: 0.85em;
+}
+#en-version {
+    float: right;
+    direction: ltr;
+    font-size: 1.5em;
 }
