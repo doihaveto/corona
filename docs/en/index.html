@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
+    <link href="style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" type="text/javascript"></script>
+    <title>Corona Calculator</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-161840464-1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-161840464-1');
+    </script>
+</head>
+<body>
+<div id="header" class="centered">
+    <h1>Corona Calculator</h1>
+    <div class="params">
+        <div>
+            <div>Initial cases</div>
+            <div><input type="number" id="cases"></div>
+        </div>
+        <div>
+            <div>Multiplies by</div>
+            <div><input type="number" id="multiplies-by" value="2"></div>
+        </div>
+        <div>
+            <div>Every number of days</div>
+            <div><input type="number" id="every-days" value="4"></div>
+        </div>
+    </div>
+    <div class="params extra">
+        <div>
+            <div>% of cases requiring ventilator</div>
+            <div><input type="number" id="ventilation-percent" value="5"></div>
+        </div>
+        <div>
+            <div>Days before requiring ventilator</div>
+            <div><input type="number" id="ventilation-days" value="8"></div>
+        </div>
+        <div>
+            <div>Mortality rate</div>
+            <div><input type="number" id="death-percent" value="1.5"></div>
+        </div>
+        <div>
+            <div>Days before recovery / death</div>
+            <div><input type="number" id="death-days" value="15"></div>
+        </div>
+        <div>
+            <div>Maximum cases</div>
+            <div><input type="number" id="max-cases" value="15000000"></div>
+        </div>
+    </div>
+</div>
+<div id="results" class="centered"></div>
+<div class="centered">
+    <button type="button" id="toggle-full-results" data-off-text="Show full results" data-on-text="Show succinct results"></button>
+</div>
+<div id="notes" class="hide">
+    <div>* This is a rough calculation that does not take into account demographics or a decrease in the number of cases.</div>
+</div>
+<div id="results-template">
+    <div class="day-result">
+        <div>
+            <span class="infected"></span> cases after <span class="days"></span> days.</div>
+            <div class="ventilation hide"><span class="ventilated"></span> actively ventilated.</div>
+            <div class="death hide"><span class="dead"></span> deaths.</div>
+    </div>
+</div>
+<div id="credits"><a href="https://twitter.com/jewishwarriors/">@jewishwarriors</a></div>
+<script type="text/javascript">
+var calculate_days = 365;
+var limit_cases = 15000000000;
+var important_days = [3, 7, 14, 30];
+var full_results = false;
+
+function calc_cases(cases, multiplies_by, every_days, max_cases, day) {
+    var cases = Math.floor(cases * Math.pow(multiplies_by, day / every_days));
+    if (cases > max_cases)
+        return max_cases;
+    return cases;
+}
+
+function clear_results() {
+    document.querySelector('#results').innerHTML = '';
+    full_results = true;
+    toggle_full_results();
+}
+
+function calculate_corona() {
+    var cases = parseInt(document.querySelector('#cases').value);
+    var multiplies_by = parseFloat(document.querySelector('#multiplies-by').value);
+    var every_days = parseFloat(document.querySelector('#every-days').value);
+    var ventilation_percent = parseFloat(document.querySelector('#ventilation-percent').value);
+    var ventilation_days = parseFloat(document.querySelector('#ventilation-days').value);
+    var death_percent = parseFloat(document.querySelector('#death-percent').value);
+    var death_days = parseFloat(document.querySelector('#death-days').value);
+    var max_cases = parseFloat(document.querySelector('#max-cases').value);
+    var ventilated_for_days = death_days - ventilation_days;
+    clear_results();
+    if (isNaN(cases) || isNaN(multiplies_by) || isNaN(every_days))
+        return;
+    var results_el = document.querySelector('#results');
+    var prev_ventilated = 1;
+    for (let day = 1; day <= calculate_days; day++) {
+        let ncases = calc_cases(cases, multiplies_by, every_days, max_cases, day);
+        if (!ncases || ncases > limit_cases)
+            break;
+        var dead = calc_cases(cases, multiplies_by, every_days, max_cases, day - death_days);
+        if (dead)
+            dead = Math.floor(dead * (death_percent / 100));
+        else
+            dead = 0;
+        var ventilated = 0;
+        for (let vday = ventilation_days; vday <= ventilation_days + ventilated_for_days; vday++) {
+            var newly_admitted = calc_cases(cases, multiplies_by, every_days, max_cases, day - vday) - calc_cases(cases, multiplies_by, every_days, max_cases, day - vday - 1);
+            ventilated += Math.floor(newly_admitted * (ventilation_percent / 100));
+        }
+        let el = document.querySelector('#results-template .day-result').cloneNode(true);
+        el.querySelector('.days').innerText = day;
+        el.querySelector('.infected').innerText = ncases.toLocaleString();
+        if (ventilated) {
+            el.querySelector('.ventilated').innerText = ventilated.toLocaleString();
+            el.querySelector('.ventilation').classList.remove('hide');
+        }
+        if (dead) {
+            el.querySelector('.dead').innerText = dead.toLocaleString();
+            el.querySelector('.death').classList.remove('hide');
+        }
+        if (important_days.indexOf(day) == -1) {
+            el.classList.add('hide', 'non-important');
+        } else {
+            el.classList.add('important');
+        }
+        results_el.appendChild(el);
+        if (!ventilated && prev_ventilated && ncases == max_cases)
+            break;
+        prev_ventilated = ventilated;
+    }
+    document.querySelector('#notes').classList.remove('hide');
+}
+
+function toggle_full_results() {
+    var button = document.querySelector('#toggle-full-results');
+    var qs = document.querySelectorAll('#results .non-important');
+    if (full_results) {
+        qs.forEach(el => el.classList.add('hide'));
+        button.innerText = button.attributes['data-off-text'].value;
+    } else {
+        qs.forEach(el => el.classList.remove('hide'));
+        button.innerText = button.attributes['data-on-text'].value;
+    }
+    full_results = !full_results;
+}
+
+document.querySelectorAll('.params input').forEach(el => {
+    el.addEventListener('change', calculate_corona);
+    el.addEventListener('keyup', calculate_corona);
+});
+var full_results_button = document.querySelector('#toggle-full-results')
+full_results_button.addEventListener('click', toggle_full_results);
+full_results_button.innerText = full_results_button.attributes['data-off-text'].value;
+</script>
+</body>
+</html>
